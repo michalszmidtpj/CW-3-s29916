@@ -52,7 +52,9 @@ namespace LegacyApp
             if (isImportant)
                 creditLimit *= 2;
             CreditLimit = creditLimit;
-            
         }
+
+        public bool HasProperLimit() =>
+            !HasCreditLimit || CreditLimit >= 500;
     }
 }

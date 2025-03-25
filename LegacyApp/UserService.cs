@@ -6,33 +6,39 @@ namespace LegacyApp
     {
         public bool AddUser(string firstName, string lastName, string email, DateTime dateOfBirth, int clientId)
         {
-            if (!NameOrLastnameIsNotNull(firstName, lastName)) 
+            if (!DoPreChecks(firstName, lastName, email, dateOfBirth))
                 return false;
-            if (!EmailIsValid(email)) 
+            var user = ObtainUser(firstName, lastName, email, dateOfBirth, clientId);
+            if (!user.HasProperLimit())
                 return false;
+            UserDataAccess.AddUser(user);
+            return true;
+        }
 
+        private static bool DoPreChecks(string firstName, string lastName, string email, DateTime dateOfBirth) =>
+            NameOrLastnameIsNotNull(firstName, lastName) && EmailIsValid(email) && CheckAge(dateOfBirth);
+
+        private static User ObtainUser(string firstName, string lastName, string email, DateTime dateOfBirth,
+            int clientId)
+        {
+            var clientRepository = new ClientRepository();
+            var client = clientRepository.GetById(clientId);
+
+            var user = new User(client, dateOfBirth, email, firstName, lastName, client.Type);
+            return user;
+        }
+
+        private static bool CheckAge(DateTime dateOfBirth)
+        {
             var now = DateTime.Now;
             var age = now.Year - dateOfBirth.Year;
 
             age = CorrectAgeEdgeCases(dateOfBirth, now, age);
 
-            if (!IsAdult(age)) 
+            if (!IsAdult(age))
                 return false;
-
-            var clientRepository = new ClientRepository();
-            var client = clientRepository.GetById(clientId);
-
-            var user = new User(client, dateOfBirth, email, firstName, lastName, client.Type);
-
-            if (!HasProperLimit(user)) 
-                return false;
-
-            UserDataAccess.AddUser(user);
             return true;
         }
-
-        private static bool HasProperLimit(User user) =>
-            !user.HasCreditLimit || user.CreditLimit >= 500;
 
 
         private static int CorrectAgeEdgeCases(DateTime dateOfBirth, DateTime now, int age)
